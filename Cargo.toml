@@ -1,0 +1,54 @@
+[package]
+name = "tlock_age"
+description = "Decrypt-only tlock library with embedded age/age_core. Supports BLS12-381 (drand quicknet) and BN254 (drand evmnet) timelock decryption."
+version = "0.0.5"
+authors = ["a137x"]
+edition = "2021"
+
+[dependencies]
+# age-core internal dependencies
+chacha20poly1305 = { version = "0.10", default-features = false, features = ["alloc"] }
+cookie-factory = "0.3.1"
+nom = { version = "7", default-features = false, features = ["alloc"] }
+secrecy = "0.8"
+base64 = "0.21"
+hkdf = "0.12"
+sha2 = "0.10"
+
+# age dependencies (from rage workspace)
+x25519-dalek = { version = "2", features = ["static_secrets"] }
+hmac = "0.12"
+scrypt = { version = "0.11", default-features = false }
+bech32 = "0.9"
+subtle = "2.5.0"
+zeroize = "1"
+sha3 = "0.10"
+blake2 = { version = "0.10", features = ["std"] }
+
+# general
+anyhow = "1.0"
+hex = "0.4"
+thiserror = "1.0"
+serde = { version = "1.0", features = ["derive"] }
+serde_with = "2.3.3"
+itertools = "0.10.5"
+
+# arkworks — BLS12-381 and BN254 curve operations
+ark-bls12-381 = "0.4.0"
+ark-bn254 = "0.4.0"
+ark-serialize = "0.4.2"
+ark-ec = "0.4.2"
+ark-ff = "0.4.2"
+
+# bn254 kyber (Go port from drand/kyber)
+num-bigint = { version = "0.4", default-features = false }
+num-traits = "0.2"
+lazy_static = "1.4"
+
+[dev-dependencies]
+regex = "1.9.3"
+
+[features]
+default = []
+armor = []
+internal = []
