@@ -27,7 +27,7 @@ pub use ibe::{
     decrypt_cca_on_g1, decrypt_cca_on_g2, encrypt_cca_on_g1, encrypt_cca_on_g2, Ciphertext,
     CiphertextCPA,
 };
-pub use lattice::{curve_lattice, target_lattice, Lattice};
+pub use lattice::{curve_lattice, Lattice};
 pub use point::{PointG1, PointG2, PointGT};
 pub use scalar::Scalar;
 pub use suite::BN254Suite;

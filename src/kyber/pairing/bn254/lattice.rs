@@ -29,43 +29,7 @@ lazy_static::lazy_static! {
         Lattice { vectors, inverse, det }
     };
 
-    static ref TARGET_LATTICE: Lattice = {
-        let vectors = vec![
-            vec![
-                big_from_base10("9931322734385697761"),
-                big_from_base10("9931322734385697761"),
-                big_from_base10("9931322734385697763"),
-                big_from_base10("9931322734385697764")
-            ],
-            vec![
-                big_from_base10("4965661367192848881"),
-                big_from_base10("4965661367192848881"),
-                big_from_base10("4965661367192848882"),
-                big_from_base10("-9931322734385697762")
-            ],
-            vec![
-                big_from_base10("-9931322734385697762"),
-                big_from_base10("-4965661367192848881"),
-                big_from_base10("4965661367192848881"),
-                big_from_base10("-4965661367192848882")
-            ],
-            vec![
-                big_from_base10("9931322734385697763"),
-                big_from_base10("-4965661367192848881"),
-                big_from_base10("-4965661367192848881"),
-                big_from_base10("-4965661367192848881")
-            ]
-        ];
-        let inverse = vec![
-            big_from_base10("734653495049373973658254490726798021314063399421879442165"),
-            big_from_base10("147946756881789319000765030803803410728"),
-            big_from_base10("-147946756881789319005730692170996259609"),
-            big_from_base10("1469306990098747947464455738335385361643788813749140841702")
-        ];
-        let det = BigUint::from_str(ORDER).unwrap();
-
-        Lattice { vectors, inverse, det }
-    };
+    // targetLattice removed in Go v1.3.2 (unused)
 }
 
 /// Lattice struct matching Go implementation exactly
@@ -169,10 +133,6 @@ pub fn curve_lattice() -> &'static Lattice {
     &CURVE_LATTICE
 }
 
-pub fn target_lattice() -> &'static Lattice {
-    &TARGET_LATTICE
-}
-
 /// Example function demonstrating lattice usage
 pub fn example_lattice_usage() {
     println!("=== BN254 Lattice Example ===");
@@ -183,14 +143,6 @@ pub fn example_lattice_usage() {
         "Curve lattice vectors: {}x{}",
         curve_lattice.vectors.len(),
         curve_lattice.vectors[0].len()
-    );
-
-    // Get the target lattice
-    let target_lattice = target_lattice();
-    println!(
-        "Target lattice vectors: {}x{}",
-        target_lattice.vectors.len(),
-        target_lattice.vectors[0].len()
     );
 
     // Example decomposition
@@ -213,21 +165,6 @@ mod tests {
     fn test_curve_lattice_decompose() {
         let lattice = curve_lattice();
         let k = BigUint::from_str("123456789").unwrap();
-        let result = lattice.decompose(&k);
-
-        // Verify the result has the expected length
-        assert_eq!(result.len(), lattice.inverse.len());
-
-        // Verify all components are positive
-        for x in &result {
-            assert!(*x >= BigUint::new(vec![0]));
-        }
-    }
-
-    #[test]
-    fn test_target_lattice_decompose() {
-        let lattice = target_lattice();
-        let k = BigUint::from_str("987654321").unwrap();
         let result = lattice.decompose(&k);
 
         // Verify the result has the expected length

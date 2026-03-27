@@ -560,20 +560,32 @@ impl PointGT {
         x == y
     }
 
-    // Null() kyber.Point - matches Go implementation
+    // Null() kyber.Point - matches Go v1.3.2: precomputed constant, returns clone
     pub fn null(&self) -> PointGT {
-        let mut p = PointGT::new();
-        // TODO: This can be a precomputed constant
-        p.pair(&PointG1::new().null(), &PointG2::new().null());
-        p
+        use lazy_static::lazy_static;
+        use std::sync::Mutex;
+        lazy_static! {
+            static ref NULL_GT: Mutex<PointGT> = {
+                let mut p = PointGT::new();
+                p.pair(&PointG1::new().null(), &PointG2::new().null());
+                Mutex::new(p)
+            };
+        }
+        NULL_GT.lock().unwrap().clone()
     }
 
-    // Base() kyber.Point - matches Go implementation
+    // Base() kyber.Point - matches Go v1.3.2: precomputed constant, returns clone
     pub fn base(&self) -> PointGT {
-        let mut p = PointGT::new();
-        // TODO: This can be a precomputed constant
-        p.pair(&PointG1::new().base(), &PointG2::new().base());
-        p
+        use lazy_static::lazy_static;
+        use std::sync::Mutex;
+        lazy_static! {
+            static ref BASE_GT: Mutex<PointGT> = {
+                let mut p = PointGT::new();
+                p.pair(&PointG1::new().base(), &PointG2::new().base());
+                Mutex::new(p)
+            };
+        }
+        BASE_GT.lock().unwrap().clone()
     }
 
     // Pick(rand cipher.Stream) kyber.Point - matches Go implementation
