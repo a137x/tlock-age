@@ -1,7 +1,7 @@
 [package]
 name = "tlock_age"
 description = "Decrypt-only tlock library with embedded age/age_core. Supports BLS12-381 (drand quicknet) and BN254 (drand evmnet) timelock decryption."
-version = "0.0.5"
+version = "0.1.0"
 authors = ["a137x"]
 edition = "2021"
 
@@ -45,6 +45,10 @@ num-bigint = { version = "0.4", default-features = false }
 num-traits = "0.2"
 lazy_static = "1.4"
 
+# drand feature dependencies
+blst = { version = "0.3", optional = true }
+scrypto = { git = "https://github.com/radixdlt/radixdlt-scrypto", tag = "v1.3.1", optional = true }
+
 [dev-dependencies]
 regex = "1.9.3"
 
@@ -52,3 +56,7 @@ regex = "1.9.3"
 default = []
 armor = []
 internal = []
+# High-level drand API: crypto types, signature verification, precompute_file_key, decrypt_age_file
+drand = ["blst"]
+# Adds #[derive(Sbor, ScryptoSbor)] to drand types for use in Scrypto smart contracts
+scrypto-support = ["drand", "scrypto"]

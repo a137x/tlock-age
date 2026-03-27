@@ -24,11 +24,13 @@ mod internal;
 #[cfg(feature = "internal")]
 pub mod internal;
 
-// Add this line to declare the tlock module
 pub mod age;
 pub mod age_core;
 pub mod kyber;
 pub mod tlock;
+
+#[cfg(feature = "drand")]
+pub mod drand;
 
 #[cfg(feature = "armor")]
 use age::armor::ArmoredReader;
