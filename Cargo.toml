@@ -4,6 +4,11 @@ description = "Decrypt-only tlock library with embedded age/age_core. Supports B
 version = "0.1.0"
 authors = ["a137x"]
 edition = "2021"
+license = "Apache-2.0"
+repository = "https://github.com/a137x/tlock-age"
+readme = "README.md"
+keywords = ["tlock", "timelock", "drand", "scrypto", "cryptography"]
+categories = ["cryptography", "no-std"]
 
 [dependencies]
 # age-core internal dependencies
