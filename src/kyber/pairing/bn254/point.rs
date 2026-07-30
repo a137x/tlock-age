@@ -186,13 +186,13 @@ impl PointG1 {
 
         // Unmarshal the coordinates directly into the point
         match self.g.get_x_mut().unmarshal(&buf[0..n]) {
-            Ok(()) => println!("DEBUG: G1 unmarshal - x.unmarshal succeeded"),
+            Ok(()) => {}
             Err(e) => {
                 return Err(e);
             }
         }
         match self.g.get_y_mut().unmarshal(&buf[n..]) {
-            Ok(()) => println!("DEBUG: G1 unmarshal - y.unmarshal succeeded"),
+            Ok(()) => {}
             Err(e) => {
                 return Err(e);
             }

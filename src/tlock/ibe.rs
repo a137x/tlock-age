@@ -254,6 +254,14 @@ where
 /// that canonical encoding is byte-identical to the input, no reduction
 /// happened and the candidate was in range.
 fn is_canonical_scalar_le(le: &[u8]) -> bool {
+    // Implicit contract: `le` must be a FULL-WIDTH scalar encoding. A shorter
+    // slice can never equal the 32-byte canonical serialization, so it would
+    // reject every candidate and spin the caller's loop to exhaustion.
+    debug_assert_eq!(
+        le.len(),
+        BLOCK_SIZE,
+        "is_canonical_scalar_le expects a {BLOCK_SIZE}-byte little-endian scalar"
+    );
     let reduced = ScalarField::from_le_bytes_mod_order(le);
     let mut canonical = Vec::with_capacity(le.len());
     if reduced.serialize_compressed(&mut canonical).is_err() {
