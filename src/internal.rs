@@ -50,13 +50,11 @@ impl crate::age::Identity for Identity {
         match precomputed_file_key {
             Some(file_key) => {
                 // checking if the precomputed file key is valid
-                println!("Precomputed file key was provided");
                 let file_key_hash = sha2::Sha256::digest(file_key.as_slice());
                 let file_key_hash_hex = hex::encode(file_key_hash);
                 if args[2] != file_key_hash_hex {
                     return Some(Err(DecryptError::InvalidFileKeyHash));
                 }
-                println!("Precomputed file key is valid");
                 return Some(Ok(file_key.into()));
             }
             None => {}

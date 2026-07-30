@@ -449,7 +449,6 @@ pub fn miller(q: &TwistPoint, p: &CurvePoint) -> GFp12 {
     q1.get_y_mut().mul(&temp_y, &xi_to_p_minus_1_over_2);
     q1.get_z_mut().set_one();
     q1.get_t_mut().set_one();
-    println!("DEBUG: q1: {}", q1.to_string());
 
     // minusQ2 := &twistPoint{}
     // minusQ2.x.MulScalar(&aAffine.x, xiToPSquaredMinus1Over3)
@@ -498,18 +497,15 @@ pub fn final_exponentiation(in_val: &GFp12) -> GFp12 {
     // t1.y.Set(&in.y)
     t1.get_x_mut().neg(in_val.get_x());
     t1.get_y_mut().set(in_val.get_y());
-    println!("DEBUG: after p^6-Frobenius setup t1: {}", t1.to_string());
 
     // inv := &gfP12{}
     // inv.Invert(in)
     // t1.Mul(t1, inv)
     let mut inv = GFp12::new();
     inv.invert(in_val);
-    println!("PASSED: DEBUG: inverted input: {}", inv.to_string());
 
     let temp_t1 = t1.clone();
     t1.mul(&temp_t1, &inv);
-    println!("DEBUG: t1 after multiply with inv: {}", t1.to_string());
 
     // t2 := (&gfP12{}).FrobeniusP2(t1)
     // t1.Mul(t1, t2)
@@ -517,7 +513,6 @@ pub fn final_exponentiation(in_val: &GFp12) -> GFp12 {
     t2.frobenius_p2(&t1);
     let temp_t1 = t1.clone();
     t1.mul(&temp_t1, &t2);
-    println!("DEBUG: PASSED t1 t2 mul");
 
     // fp := (&gfP12{}).Frobenius(t1)
     // fp2 := (&gfP12{}).FrobeniusP2(t1)
@@ -528,7 +523,6 @@ pub fn final_exponentiation(in_val: &GFp12) -> GFp12 {
     fp2.frobenius_p2(&t1);
     let mut fp3 = GFp12::new();
     fp3.frobenius(&fp2);
-    println!("DEBUG: PASSED: fp fp2 fp3 frobenius");
 
     // Compute u-th powers
     let u = &U;
@@ -541,7 +535,6 @@ pub fn final_exponentiation(in_val: &GFp12) -> GFp12 {
     fu2.exp(&fu, &u);
     let mut fu3 = GFp12::new();
     fu3.exp(&fu2, &u);
-    println!("DEBUG: PASSED: fu fu2 fu3 exp");
 
     // Compute various Frobenius maps
     // y3 := (&gfP12{}).Frobenius(fu)
@@ -556,7 +549,6 @@ pub fn final_exponentiation(in_val: &GFp12) -> GFp12 {
     fu3p.frobenius(&fu3);
     let mut y2 = GFp12::new();
     y2.frobenius_p2(&fu2);
-    println!("DEBUG: PASSSED: y3 fu2p fu3p y2 frobenius");
 
     // y0 := &gfP12{}
     // y0.Mul(fp, fp2).Mul(y0, fp3)
@@ -564,7 +556,6 @@ pub fn final_exponentiation(in_val: &GFp12) -> GFp12 {
     y0.mul(&fp, &fp2);
     let temp_y0 = y0.clone();
     y0.mul(&temp_y0, &fp3);
-    println!("DEBUG: PASSSED y0 Mul(fp, fp2).Mul(y0, fp3)");
 
     // y1 := (&gfP12{}).Conjugate(t1)
     // y5 := (&gfP12{}).Conjugate(fu2)
@@ -589,7 +580,6 @@ pub fn final_exponentiation(in_val: &GFp12) -> GFp12 {
     y6.mul(&fu3, &fu3p);
     let temp_y6 = y6.clone();
     y6.conjugate(&temp_y6);
-    println!("DEBUG: PASSED y6 in final_exp");
 
     // Final computation
     // t0 := (&gfP12{}).Square(y6)
@@ -641,8 +631,6 @@ pub fn optimal_ate(a: &TwistPoint, b: &CurvePoint) -> GFp12 {
     let e = miller(a, b);
 
     let mut ret = final_exponentiation(&e);
-    println!("DEBUG: final exponentiation result: {}", ret.to_string());
-    println!("DEBUG: FINAL EXPONENTIATION IS CORRECT (inside optimal_ate)");
 
     if a.is_infinity() || b.is_infinity() {
         ret.set_one();

@@ -30,7 +30,6 @@ impl<R> BaseDecryptor<R> {
     where
         F: FnMut(&[Stanza]) -> Option<Result<FileKey, DecryptError>>,
     {
-        println!("33 - this debug: {:?}", &self.header);
         match &self.header {
             Header::V1(header) => filter(&header.recipients)
                 .unwrap_or(Err(DecryptError::NoMatchingKeys))
@@ -57,7 +56,6 @@ impl<R> RecipientsDecryptor<R> {
         mut identities: impl Iterator<Item = &'a dyn crate::age::Identity>,
         precomputed_file_key: Option<[u8; 16]>,
     ) -> Result<PayloadKey, DecryptError> {
-        println!("59 - this debug");
         self.0.obtain_payload_key(|r| {
             identities.find_map(|key| key.unwrap_stanzas(r, precomputed_file_key.clone()))
         })

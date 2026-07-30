@@ -120,8 +120,6 @@ pub fn gt_to_hash(suite: &BN254Suite, gt: &PointGT, length: usize) -> Result<Vec
 /// }
 /// ```
 pub fn h3(suite: &BN254Suite, sigma: &[u8], msg: &[u8]) -> Result<Scalar> {
-    println!("DEBUG: H3 input - sigma: {}, msg: {}", hex::encode(sigma), hex::encode(msg));
-    
     let mut hash = suite.hash();
     
     // Write H3 tag
@@ -138,7 +136,6 @@ pub fn h3(suite: &BN254Suite, sigma: &[u8], msg: &[u8]) -> Result<Scalar> {
     
     // Get initial hash
     let buffer = hash.finalize();
-    println!("DEBUG: H3 initial hash: {}", hex::encode(&buffer));
     
     // Get scalar for rejection sampling
     let mut scalar = suite.scalar();
@@ -147,12 +144,8 @@ pub fn h3(suite: &BN254Suite, sigma: &[u8], msg: &[u8]) -> Result<Scalar> {
     let actual_bit_len = scalar.field().bits() as usize;
     let to_mask = canonical_bit_len.saturating_sub(actual_bit_len);
     
-    println!("DEBUG: H3 masking - canonicalBitLen: {}, actualBitLen: {}, toMask: {}", 
-             canonical_bit_len, actual_bit_len, to_mask);
-    
     // Try rejection sampling
     for i in 1u16..65535 {
-        println!("DEBUG: H3 iteration: {}", i);
         let mut hash = suite.hash();
         // Write iteration counter as little-endian u16 (matches Go binary.LittleEndian.PutUint16)
         hash.write_all(&i.to_le_bytes())
@@ -169,8 +162,6 @@ pub fn h3(suite: &BN254Suite, sigma: &[u8], msg: &[u8]) -> Result<Scalar> {
         
         // Try to unmarshal as scalar
         if scalar.unmarshal_binary(&hashed).is_ok() {
-            println!("DEBUG: H3 generated scalar at iteration {}: {}", i, scalar.string());
-            println!("DEBUG: H3 scalar bytes: {}", hex::encode(&hashed));
             return Ok(scalar);
         }
     }

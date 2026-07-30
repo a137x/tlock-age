@@ -180,77 +180,44 @@ impl PointG1 {
             return Err("bn254.G1: not enough data".to_string());
         }
 
-        println!(
-            "DEBUG: G1 unmarshal - input bytes: {} (len: {})",
-            hex::encode(buf),
-            buf.len()
-        );
 
         // Reset the point to prepare for unmarshaling
         self.g = CurvePoint::new();
 
         // Unmarshal the coordinates directly into the point
-        println!(
-            "DEBUG: G1 unmarshal - calling x.unmarshal with bytes: {}",
-            hex::encode(&buf[0..n])
-        );
         match self.g.get_x_mut().unmarshal(&buf[0..n]) {
             Ok(()) => println!("DEBUG: G1 unmarshal - x.unmarshal succeeded"),
             Err(e) => {
-                println!("DEBUG: G1 unmarshal - x.unmarshal failed: {}", e);
                 return Err(e);
             }
         }
-        println!(
-            "DEBUG: G1 unmarshal - calling y.unmarshal with bytes: {}",
-            hex::encode(&buf[n..])
-        );
         match self.g.get_y_mut().unmarshal(&buf[n..]) {
             Ok(()) => println!("DEBUG: G1 unmarshal - y.unmarshal succeeded"),
             Err(e) => {
-                println!("DEBUG: G1 unmarshal - y.unmarshal failed: {}", e);
                 return Err(e);
             }
         }
 
-        println!(
-            "DEBUG: G1 unmarshal - after unmarshal: x={}, y={}",
-            self.g.get_x(),
-            self.g.get_y()
-        );
 
         // Apply Montgomery encoding to x and y coordinates (but not z and t)
         // This matches the Go implementation where coordinates are stored in Montgomery form
-        println!(
-            "DEBUG: G1 unmarshal - before mont_encode: x={}, y={}",
-            self.g.get_x(),
-            self.g.get_y()
-        );
         let x_temp = self.g.get_x().clone();
         let y_temp = self.g.get_y().clone();
         mont_encode(self.g.get_x_mut(), &x_temp);
         mont_encode(self.g.get_y_mut(), &y_temp);
 
-        println!(
-            "DEBUG: G1 unmarshal - after mont_encode: x={}, y={}",
-            self.g.get_x(),
-            self.g.get_y()
-        );
 
         // Check if this represents the point at infinity
         let zero = GFp::new(0);
         if *self.g.get_x() == zero && *self.g.get_y() == zero {
             // This is the point at infinity
-            println!("DEBUG: G1 unmarshal - setting to infinity");
             self.g.set_infinity();
         } else {
             // This is a regular point
-            println!("DEBUG: G1 unmarshal - setting regular point");
             *self.g.get_z_mut() = GFp::new(1);
             *self.g.get_t_mut() = GFp::new(1);
         }
 
-        println!("DEBUG: G1 unmarshal - final point: {}", self.g);
 
         if !self.g.is_on_curve() {
             return Err("bn254.G1: malformed point".to_string());

@@ -215,18 +215,51 @@ where
                 .finalize()
                 .to_vec();
             *h.first_mut().unwrap() = h.first().unwrap() >> BITS_TO_MASK_FOR_BLS12381;
-            // test if we can build a valid scalar out of n
-            // this is a hash method to be compatible with the existing implementation
+            // `h` is the candidate in BIG-endian order (matching tlock-js's
+            // `bytesToNumberBE(data)`); ark-ff wants little-endian, so reverse.
             let rev: Vec<u8> = h.iter().copied().rev().collect();
-            if ScalarField::from_le_bytes_mod_order(&rev)
-                .serialized_size(ark_serialize::Compress::Yes)
-                > 0
-            {
+            // Rejection sampling, bit-for-bit as tlock-js `h3` does it:
+            //
+            //     data[0] = data[0] >> BitsToMaskForBLS12381
+            //     const n = bytesToNumberBE(data)
+            //     if (n < bls12_381.fields.Fr.ORDER) { return n }
+            //     // else: bump the counter and re-hash
+            //
+            // A candidate is ACCEPTED only when it is already canonical (i.e.
+            // strictly less than the scalar field order). Anything else is
+            // REJECTED and we re-hash with the next counter value.
+            //
+            // The previous accept-test here was
+            // `from_le_bytes_mod_order(&rev).serialized_size(Compress::Yes) > 0`,
+            // which is a constant 32 for BLS12-381 Fr and therefore can never
+            // reject: it silently reduced out-of-range candidates mod order
+            // instead of re-sampling. Since the top bit is masked off, a
+            // candidate lands in [ORDER, 2^255) roughly 9.5% of the time, and
+            // for those ballots the Rust decryptor derived a *different* scalar
+            // than the browser encryptor -> `c.u != r_g` -> decrypt failure.
+            if is_canonical_scalar_le(&rev) {
                 buf.copy_from_slice(&rev);
                 return;
             }
         }
     }
+}
+
+/// Returns true when `le` (little-endian bytes) encodes a value strictly less
+/// than the BLS12-381 scalar field order, i.e. when reducing it mod order is a
+/// no-op. This is the Rust equivalent of tlock-js's `n < Fr.ORDER` test.
+///
+/// Implemented by round-tripping through the field: `from_le_bytes_mod_order`
+/// reduces, and re-serializing yields the canonical little-endian encoding. If
+/// that canonical encoding is byte-identical to the input, no reduction
+/// happened and the candidate was in range.
+fn is_canonical_scalar_le(le: &[u8]) -> bool {
+    let reduced = ScalarField::from_le_bytes_mod_order(le);
+    let mut canonical = Vec::with_capacity(le.len());
+    if reduced.serialize_compressed(&mut canonical).is_err() {
+        return false;
+    }
+    canonical == le
 }
 
 #[cfg(test)]
@@ -247,5 +280,93 @@ mod tests {
         let b = vec![];
         let x: Vec<u8> = vec![];
         assert_eq!(xor(&a, &b), x);
+    }
+
+    /// Recomputes `r = H("IBE-H3" || sigma || msg)` exactly as `decrypt` does,
+    /// then runs `expand_message` over it and returns the 32 little-endian
+    /// bytes it produced.
+    fn h3_expand(sigma: &[u8], msg: &[u8]) -> [u8; BLOCK_SIZE] {
+        let r = sha2::Sha256::new()
+            .chain(b"IBE-H3")
+            .chain(sigma)
+            .chain(msg)
+            .finalize();
+        let mut buf = [0u8; BLOCK_SIZE];
+        ExpandMsgDrand::<Sha256>::expand_message(r.as_slice(), &[], &mut buf);
+        buf
+    }
+
+    /// Regression test for the tlock-js / tlock-age h3 divergence.
+    ///
+    /// `sigma` below was found by brute force such that the FIRST candidate
+    /// (counter i = 1) is >= the BLS12-381 scalar field order. tlock-js
+    /// REJECTS that candidate and re-hashes with i = 2; the old Rust
+    /// accept-test (`serialized_size(Compress::Yes) > 0`, a constant 32) could
+    /// never reject, so it reduced the i = 1 candidate mod order instead and
+    /// derived a different scalar. Ground truth below was computed with
+    /// tlock-js's own @noble/hashes + @noble/curves dependencies running its
+    /// verbatim `h3` (src/crypto/ibe.ts:156-181).
+    #[test]
+    fn test_h3_rejection_sampling_matches_tlock_js() {
+        let sigma = hex::decode("0000000b000000000000000000000000").unwrap();
+        let msg = b"OTER-TASK-8.5-RE";
+
+        // The i = 1 candidate, big-endian, top bit already masked off.
+        let first_candidate_be =
+            hex::decode("7f69685246a9587588d983c2a308c93b363493f0532f0fb43e62153ae2b85b75")
+                .unwrap();
+        let mut first_candidate_le = first_candidate_be.clone();
+        first_candidate_le.reverse();
+        assert!(
+            !is_canonical_scalar_le(&first_candidate_le),
+            "test vector is stale: the first h3 candidate must be >= Fr::ORDER"
+        );
+
+        // What tlock-js actually returns: the i = 2 candidate.
+        let expected_le =
+            hex::decode("c39923d1ea5fcb9133ee7de850f1131f6c023c1ed58fa8589b67fd59388f3d1f")
+                .unwrap();
+        assert_eq!(
+            h3_expand(&sigma, msg).to_vec(),
+            expected_le,
+            "expand_message must re-sample (i=2), not reduce the i=1 candidate mod order"
+        );
+
+        // And it must NOT be what the broken accept-test produced.
+        let wrong = ScalarField::from_le_bytes_mod_order(&first_candidate_le);
+        let derived = ScalarField::from_le_bytes_mod_order(&h3_expand(&sigma, msg));
+        assert_ne!(derived, wrong, "regressed to reduce-mod-order behaviour");
+    }
+
+    /// Control: an input whose first candidate is already in range must still
+    /// be accepted at i = 1 (this is the ~90% path that always worked).
+    #[test]
+    fn test_h3_accepts_first_candidate_when_in_range() {
+        let sigma = [0u8; 16];
+        let msg = b"OTER-TASK-8.5-RE";
+        let expected_le =
+            hex::decode("898be83ec981d06131fb3bcbfe6211f3f63eda2c4989ea6e1eda92665548dc15")
+                .unwrap();
+        assert_eq!(h3_expand(&sigma, msg).to_vec(), expected_le);
+    }
+
+    #[test]
+    fn test_is_canonical_scalar_le_boundaries() {
+        // 0 is canonical.
+        assert!(is_canonical_scalar_le(&[0u8; 32]));
+        // ORDER - 1 is canonical; ORDER itself is not.
+        let order_minus_one_be =
+            hex::decode("73eda753299d7d483339d80809a1d80553bda402fffe5bfeffffffff00000000")
+                .unwrap();
+        let mut le = order_minus_one_be.clone();
+        le.reverse();
+        assert!(is_canonical_scalar_le(&le));
+
+        let order_be =
+            hex::decode("73eda753299d7d483339d80809a1d80553bda402fffe5bfeffffffff00000001")
+                .unwrap();
+        let mut le = order_be.clone();
+        le.reverse();
+        assert!(!is_canonical_scalar_le(&le));
     }
 }

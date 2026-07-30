@@ -64,14 +64,11 @@ pub fn decrypt_cca_on_g2(
     let mut r_p = suite.g2().point();
     r_p.mul(&r, &g2_base);
 
-    println!("DEBUG: Comparing rP == U: {}", r_p.equal(&ciphertext.u));
-
     if !r_p.equal(&ciphertext.u) {
         return Err(BN254Error::IBEError(
             "invalid proof: rP check failed".to_string(),
         ));
     }
-    println!("DEBUG: VALIDATION SUCCESSFUL - rP == U");
 
     Ok(msg)
 }

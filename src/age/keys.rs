@@ -30,8 +30,6 @@ pub(crate) fn v1_payload_key(
     nonce: &Nonce,
 ) -> Result<PayloadKey, DecryptError> {
     // Verify the MAC
-    println!("DEBUG -33 - file_key: {:?}", file_key.expose_secret());
-    println!("DEBUG -33 - file_key_hex: {:?}", hex::encode(file_key.expose_secret()));
     header.verify_mac(mac_key(file_key))?;
 
     // Return the payload key

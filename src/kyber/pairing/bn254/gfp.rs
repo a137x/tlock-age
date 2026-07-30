@@ -115,7 +115,6 @@ impl GFp {
             return Err("Invalid input length".to_string());
         }
 
-        println!("DEBUG: GFp unmarshal - input bytes: {}", hex::encode(input));
 
         // Unmarshal the bytes into little-endian u64 words, matching Go exactly
         for w in 0..4 {
@@ -124,23 +123,12 @@ impl GFp {
                 let byte = input[8 * w + b];
                 self.value[3 - w] += (byte as u64) << (56 - 8 * b);
             }
-            println!(
-                "DEBUG: GFp unmarshal - word {} (index {}): {:016x}",
-                w,
-                3 - w,
-                self.value[3 - w]
-            );
         }
 
-        println!(
-            "DEBUG: GFp unmarshal - raw stored value: {:016x}{:016x}{:016x}{:016x}",
-            self.value[3], self.value[2], self.value[1], self.value[0]
-        );
 
         // Check if the value is less than the modulus
         for i in (0..4).rev() {
             if self.value[i] < P2[i] {
-                println!("DEBUG: GFp unmarshal - modulus check passed");
                 return Ok(());
             }
             if self.value[i] > P2[i] {
